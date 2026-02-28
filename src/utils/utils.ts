@@ -1,5 +1,6 @@
 import { generateText } from "ai"; // 用的 Vercel AI SDK
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { STAGE1_SYSTEM_PROMPT } from "./promptUtils/prompt.js";
 import { openai } from "@ai-sdk/openai";
 import { RepairJson,
   validateAndNormalizeResult_1,
@@ -9,6 +10,7 @@ import { RepairJson,
 
 //存放工具函数
 import type { Stage1Output, Stage2Output, UMLModel } from "../types/diagram.js";
+import type { ChatMessage } from "../types/api.js";
 
 // 创建 DeepSeek 客户端
 const deepseek = createOpenAICompatible({
@@ -19,14 +21,16 @@ const deepseek = createOpenAICompatible({
 
 
 //stage1 的处理过程，调用api
-export const callStage1LLM = async (prompt: string): Promise<Stage1Output> => {
+export const callStage1LLM = async (messages: ChatMessage[]): Promise<Stage1Output> => {
   try {
     // 调用 LLM API
     console.log("🤖 [Stage 1] 使用 DeepSeek 处理...");
     
     const { text } = await generateText({
       model: deepseek("deepseek-chat"),  // 使用 deepseek-chat 模型
-      prompt: prompt,
+      // prompt: prompt,
+      system: STAGE1_SYSTEM_PROMPT,
+      messages: messages,                                     //暂定，可能仍需修改
       temperature: 0.1,
     });
 
@@ -67,7 +71,7 @@ export const callStage2LLM = async (prompt: string): Promise<UMLModel> => {
     let result = transformToUMLModel(output);
     return result;
   } catch (error) {
-    console.error("❌ [Stage 1] Failed:", error);
+    console.error("❌ [Stage 2] Failed:", error);
     // 返回一个空对象兜底，或者直接 throw error 让外层处理重试
     throw error;
   }

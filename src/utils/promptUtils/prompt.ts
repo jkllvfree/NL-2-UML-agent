@@ -1,7 +1,6 @@
 import type { Stage1Output } from "../../types/diagram.js";
 
-export const generateStage1Prompt = (userInput: string): string => {
-  return `
+export const STAGE1_SYSTEM_PROMPT = `
 # Role
 你是一个资深的软件系统分析师，精通 UML 建模。
 
@@ -28,9 +27,6 @@ export const generateStage1Prompt = (userInput: string): string => {
   "ambiguities": ["需澄清：订单是否有状态流转？"]
 }
 
-# User Input
-"${userInput}"
-
 # Constraints
 1. 忽略所有关于 UI 设计、颜色、交互动画的描述。
 2. 类名必须使用 PascalCase (大驼峰命名法)。
@@ -46,7 +42,54 @@ export const generateStage1Prompt = (userInput: string): string => {
   "ambiguities": ["..."]
 }
 `;
-};
+
+// export const generateStage1Prompt = (userInput: string): string => {
+//   return `
+// # Role
+// 你是一个资深的软件系统分析师，精通 UML 建模。
+
+// # Task
+// 分析用户的自然语言需求，过滤无关信息，提取核心领域模型，并输出为 JSON。
+
+// # Workflow
+// 1. 需求澄清：识别模糊点（如缺失的关联、不明确的多重性）。
+// 2. 识别实体 (Class)：提取名词作为候选类。
+// 3. 识别属性与方法：虽不需要详细定义，但需感知其存在。
+// 4. 识别关系 (Inheritance/Association)：判断类之间的交互方式。
+
+// # Example (Few-Shot Learning)
+// ## User Input
+// "我们需要一个简单的电商后端模块。一个订单(Order)可以包含多个订单项(OrderItem),每个订单项关联到一个具体的商品（Product）。"
+
+// ## Assistant Output
+// {
+//   "identified_classes": ["Order", "OrderItem", "Product"],
+//   "potential_relationships": [
+//     {"from": "Order", "to": "OrderItem", "type": "composition", "confidence": 0.95},
+//     {"from": "OrderItem", "to": "Product", "type": "association", "confidence": 0.9}
+//   ],
+//   "ambiguities": ["需澄清：订单是否有状态流转？"]
+// }
+
+// # User Input
+// "${userInput}"
+
+// # Constraints
+// 1. 忽略所有关于 UI 设计、颜色、交互动画的描述。
+// 2. 类名必须使用 PascalCase (大驼峰命名法)。
+// 3. **重要：只返回纯 JSON 字符串，不要包含 markdown 标记(如 \`\`\`json),不要包含任何解释性文字。**
+
+// # Output Schema
+// 请严格按照以下 JSON 格式输出：
+// {
+//   "identified_classes": ["Class1", "Class2"],
+//   "potential_relationships": [
+//     { "from": "Class1", "to": "Class2", "type": "association", "confidence": 0.9 }
+//   ],
+//   "ambiguities": ["..."]
+// }
+// `;
+// };
 
 export const generateStage2Prompt = (stage1Output: Stage1Output): string => {
   return `
@@ -133,7 +176,7 @@ export const generateStage2Prompt = (stage1Output: Stage1Output): string => {
 }
 
 # Stage1 Output
-"${stage1Output}"
+${JSON.stringify(stage1Output, null, 2)}
 
 # Constraints
 1. 类名使用 PascalCase, 属性/方法名使用 camelCase

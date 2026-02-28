@@ -4,16 +4,24 @@ import {
   type UMLModel,
 } from "./diagram.js";
 
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+}
+
+// 定义单次澄清的结构
+export interface ClarificationTurn {
+  question: string; // LLM 问的问题
+  answer: string;   // 用户的回答
+}
+
 // 1. API 请求体 (输入规范)
 export interface UMLRequest {
   requirement: string; // 必填，自然语言需求
   language?: ProgrammingLanguage; // 可选
-  context?: Record<string, any>; // 可选，上下文信息
-  clarificationContext?: {
-    //可选，处理需求澄清（新增加）
-    question: string;
-    answer: string;
-  };
+
+  // 历史记录数组：前端把之前所有的问答都传过来
+  history?: ClarificationTurn[];
 }
 
 //
