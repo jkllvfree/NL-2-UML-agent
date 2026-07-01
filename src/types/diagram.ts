@@ -73,6 +73,9 @@ export interface LinkData {
   from: number; // 源节点 key值
   to: number; // 目标节点 key值
   relationship: RelationshipType;
+  text?: string;        // 关系标签
+  sourceText?: string; // 源端多重性
+  targetText?: string; // 目标端多重性
 }
 
 // 最终完整的 UML 模型 (前端主要消费的对象)
@@ -80,7 +83,7 @@ export interface UMLModel {
   class?: string; // 可选，文档示例中为 "GraphLinksModel"
   nodeDataArray: ClassNode[];
   linkDataArray: LinkData[];
-  description?: string; // 描述信息 [cite: 1081]
+  description?: string; // 描述信息，现在会包含原始自然语言需求
 }
 
 // 2. 阶段一输出 (需求澄清结果)
@@ -98,6 +101,7 @@ export interface Stage1Output {
 }
 
 export interface Stage2Output {
+  description?: string; // 可选，模型的概括性描述
   nodeDataArray: ClassNode[];
   linkDataArray: RawLinkData[];
 }
@@ -114,4 +118,232 @@ export interface ConsistencyCheckResult {
         totalRelationships: number;
         connectedClasses: number;
     };
+}
+
+// ============ 模块树类型定义 (schema_version: 0.2.1) ============
+
+// 模块树节点
+export interface ModuleTreeNode {
+  module_id: string;       // 模块唯一ID
+  module_name: string;     // 模块名称
+  directory_name: string;  // 目录名(由模块名称规范化生成)
+  full_path: string;       // 完整路径(相对于 design_model/modules)
+  requirement_scope: Record<string, unknown>; // 当前模块需求范围摘要
+  is_leaf: boolean;        // 是否为叶子模块
+  children: ModuleTreeNode[]; // 子模块列表
+}
+
+// 模块树统计信息
+export interface ModuleTreeStats {
+  total_nodes: number;     // 模块总数
+  leaf_nodes: number;      // 叶子模块数量
+  max_depth: number;      // 最大层级深度
+}
+
+// 来源信息
+export interface GeneratedFrom {
+  requirement_file: string;  // 来源需求文档路径
+  document_version: string;  // 来源文档版本
+}
+
+// 完整的模块树结构
+export interface ModuleTree {
+  schema_version: string;   // 模块树 schema 版本
+  project_name: string;      // 所属项目名称
+  generated_from: GeneratedFrom; // 来源信息
+  root: ModuleTreeNode;      // 根节点
+  stats: ModuleTreeStats;   // 统计信息
+}
+
+// ============ 叶子模块类图类型定义 (leaf_model.json 格式) ============
+
+// 属性定义
+export interface Attribute {
+  name: string;            // 属性名 (camelCase)
+  type: string;            // 数据类型
+  multiplicity?: string | null;
+}
+
+// 方法参数
+export interface Parameter {
+  name: string;
+  type: string;
+  multiplicity?: string | null;
+}
+
+// 方法定义
+export interface Operation {
+  name: string;            // 方法名 (camelCase)
+  returnType?: string | null;
+  parameters: Parameter[];
+  businessGoal: string;
+  preconditions: string[];
+  postconditions: string[];
+}
+
+// 依赖关系
+export interface Dependency {
+  target: string;          // 目标 classifier_id 或名称
+  kind: "generalization" | "realization" | "association" | "aggregation" | "composition" | "dependency";
+  name?: string | null;
+  multiplicityFrom?: string | null;
+  multiplicityTo?: string | null;
+  businessRelation?: string | null;
+}
+
+// 分类器（类/接口/枚举）
+export interface Classifier {
+  classifier_id: string;   // 唯一标识
+  name: string;            // 类名 (PascalCase)
+  kind: "Entity" | "ValueObject" | "Service" | "Enum";
+  module_id: string;       // 所属模块的唯一标识ID
+  stereotype: "Entity" | "ValueObject" | "AggregateRoot" | "DomainService" | "Repository" | "Policy" | "Event";
+  businessMeaning: string;
+  responsibilities: string[];
+  businessRules: string[];
+  attributes: Attribute[];
+  operations: Operation[];
+  dependencies: Dependency[];
+}
+
+// 关系
+export interface Relation {
+  relation_id: string;
+  level: string;
+  kind: "generalization" | "realization" | "association" | "aggregation" | "composition" | "dependency";
+  from: string;            // 源端 classifier_id
+  to: string;              // 目标端 classifier_id
+  from_module_id: string;
+  to_module_id: string;
+  derived_from: string[];
+}
+
+// 叶子模块类图模型
+export interface LeafModel {
+  description: string;     // 100-200字概括描述
+  classifiers: Classifier[];
+  relations?: Relation[];
+}
+
+// ============ 时序图类型定义 ============
+
+export interface SequenceContextVariable {
+  name: string;
+  type: string;
+  initialValue?: string;
+}
+
+export interface SequenceContext {
+  variables: SequenceContextVariable[];
+}
+
+export interface LifelineCreation {
+  created_by_message_id?: string;
+}
+
+export interface LifelineDestruction {
+  destroyed_by_message_id?: string;
+}
+
+export interface SequenceLifeline {
+  lifeline_id: string;
+  name: string;
+  isActor: boolean;
+  classifier_id?: string | null;
+  role: "Actor" | "Aggregate" | "Service" | "ExternalSystem" | "Policy";
+  businessResponsibility: string;
+}
+
+export type SequenceElementType = "Message" | "Fragment";
+
+export type SequenceMessageKind = "request" | "notify" | "response";
+
+export interface SequenceMessageArgument {
+  name: string;
+  value: string;
+  type?: string;
+}
+
+export interface SequenceMessageReturn {
+  variable?: string;
+  type?: string;
+}
+
+export interface SequenceMessageActivation {
+  start?: boolean;
+  end?: boolean;
+}
+
+export interface SequenceMessageException {
+  throws?: string[];
+  onException?: string;
+}
+
+export interface SequenceMessageElement {
+  element_id: string;
+  type: "Message";
+  message: {
+    message_kind: SequenceMessageKind;
+    name: string;
+    sequence_number?: string;
+    source: { lifeline_id: string };
+    target: { lifeline_id: string };
+    arguments?: SequenceMessageArgument[];
+    guard?: string;
+    businessGoal: string;
+    businessResult: string;
+    businessRuleRefs: string[];
+    outputs: string[];
+  };
+}
+
+export type SequenceFragmentType = "alt" | "opt" | "loop" | "par";
+
+export interface SequenceFragmentLoop {
+  min?: number;
+  max?: string;
+  condition?: string;
+}
+
+export interface SequenceFragmentOperand {
+  operand_id: string;
+  guardCondition?: string | null;
+  elements: SequenceElement[];
+}
+
+export interface SequenceFragmentElement {
+  element_id: string;
+  type: "Fragment";
+  fragment: {
+    fragment_type: SequenceFragmentType;
+    sequence_number?: string;
+    businessPurpose: string;
+    loop?: { condition?: string };
+    operands: SequenceFragmentOperand[];
+  };
+}
+
+export type SequenceElement =
+  | SequenceMessageElement
+  | SequenceFragmentElement;
+
+export interface SequenceModel {
+  description: string;
+  interaction_id: string;
+  name: string;
+  module_id: string;
+  use_case_id: string;
+  preconditions: string[];
+  postconditions: string[];
+  businessOutcome: string;
+  context: SequenceContext;
+  lifelines: SequenceLifeline[];
+  sequence: { elements: SequenceElement[] };
+}
+
+export interface SequenceView {
+  module_id: string;
+  module_name: string;
+  schema_version: string;
+  interactions: SequenceModel[];
 }

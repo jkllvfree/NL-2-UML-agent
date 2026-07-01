@@ -7,3 +7,23 @@ dist/
 # 忽略本地环境变量文件
 .env
 
+
+# 忽略需求文档和叶子格式目录
+需求文档和叶子格式/
+
+# 忽略约束文档目录
+约束文档/
+
+# 忽略生成的模块树和设计文件
+project_meta.json
+design_model/
+schemas/
+CLAUDE.md
+schemas.zip
+
+# 忽略 Mac 系统文件
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
